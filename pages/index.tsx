@@ -3,15 +3,21 @@ import Image from "next/image";
 import { Inter } from "next/font/google";
 import styles from "@/styles/Home.module.css";
 import { useQuery } from "react-query";
+import Link from "next/link";
+import { User } from "@prisma/client";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home() {
-  const { data, error, isLoading } = useQuery("users", async () => {
-    const res = await fetch("/api/user");
-    if (!res.ok) throw new Error(res.statusText);
-    return res.json();
-  });
+  const { data, error, isLoading } = useQuery<{ users: User[] }>(
+    "users",
+    async () => {
+      const res = await fetch("/api/user");
+      if (!res.ok) throw new Error(res.statusText);
+      return res.json();
+    }
+  );
+  console.log({ ...data });
 
   return (
     <>
@@ -67,62 +73,25 @@ export default function Home() {
         </div>
 
         <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <Link href="/issue" className={styles.card} rel="noopener noreferrer">
             <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
+              List of issues <span>-&gt;</span>
             </h2>
             <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
+              See the all issues and its details.
             </p>
-          </a>
+          </Link>
 
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+          <Link
+            href="/issue/add"
             className={styles.card}
-            target="_blank"
             rel="noopener noreferrer"
           >
             <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
+              Add new issue <span>-&gt;</span>
             </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
+            <p className={inter.className}>Add a new issue to postgres!</p>
+          </Link>
         </div>
       </main>
     </>
