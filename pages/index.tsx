@@ -81,17 +81,6 @@ export default function Home() {
               See the all issues and its details.
             </p>
           </Link>
-
-          <Link
-            href="/issue/add"
-            className={styles.card}
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Add new issue <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>Add a new issue to postgres!</p>
-          </Link>
         </div>
       </main>
     </>
