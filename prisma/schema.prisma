@@ -11,30 +11,32 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  name           String?
-  email          String   @unique
-  createdIssue   Issue[]  @relation("author")
-  asignedIssue   Issue[]  @relation("asignee")
-  reviewingIssue Issue[]  @relation("reviewer")
-  approvedIssue  Issue[]  @relation("approvedBy")
+  id                     String   @id @default(uuid())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  name                   String?
+  email                  String   @unique
+  issueCreated           Issue[]  @relation("author")
+  issueAssigned          Issue[]  @relation("assignee")
+  issueWeaklyReviewing   Issue[]  @relation("weakReviewer")
+  issueStronglyReviewing Issue[]  @relation("strongReviewer")
+  issueApproved          Issue[]  @relation("approvedBy")
 }
 
 model Issue {
-  id         String    @id @default(uuid())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  title      String
-  content    String
-  comments   Comment[]
-  authorId   String
-  author     User      @relation("author", fields: [authorId], references: [id])
-  asigneeId  String?
-  asignee    User?     @relation("asignee", fields: [asigneeId], references: [id])
-  reviewers  User[]    @relation("reviewer")
-  approvedBy User[]    @relation("approvedBy")
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  title           String
+  content         String
+  comments        Comment[]
+  authorId        String
+  author          User      @relation("author", fields: [authorId], references: [id])
+  assigneeId      String?
+  assignee        User?     @relation("assignee", fields: [assigneeId], references: [id])
+  weakReviewers   User[]    @relation("weakReviewer")
+  strongReviewers User[]    @relation("strongReviewer")
+  approvedBy      User[]    @relation("approvedBy")
 }
 
 model Comment {

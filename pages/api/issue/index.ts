@@ -6,12 +6,14 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "POST") {
-    const { title, content, authorId } = req.body;
+    const { title, content, authorId, assigneeId } = req.body;
+    console.log(req.body)
     const issue = await prisma.issue.create({
       data: {
         title,
         content,
         authorId,
+        assigneeId,
       },
     });
     res.status(200).json({ issue });
