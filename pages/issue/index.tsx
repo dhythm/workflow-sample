@@ -2,6 +2,7 @@ import { Issue, User } from "@prisma/client";
 import { useQuery } from "react-query";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useMutation } from "react-query";
+import Link from "next/link";
 
 type Inputs = {
   title: string;
@@ -97,6 +98,7 @@ export default function IssuesPage() {
           <p>author   : {issue.author.name}</p>
           <p>assignee : {issue.assignee?.name ?? ''}</p>
           <p>reviewers: {issue.reviewers.map(reviewer => reviewer.name).join(', ')}</p>
+          <Link href={`/issue/${issue.id}`}>See</Link>
         </div>
         ))}
 
