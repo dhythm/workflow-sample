@@ -14,7 +14,7 @@ type Inputs = {
 
 
 export default function IssuesPage() {
-  const { data: issueData, refetch } = useQuery<{ issues: (Issue & { author: User; assignee: User; reviewers: User[] })[] }>(
+  const { data: issues, refetch } = useQuery<(Issue & { author: User; assignee: User; weakReviewers: User[], strongReviewers: User[], approvedBy: User[] })[]>(
     "issues",
     async () => {
       const res = await fetch("/api/issue");
@@ -22,7 +22,7 @@ export default function IssuesPage() {
       return res.json();
     }
   );
-  const { data: userData } = useQuery<{ users: User[] }>(
+  const { data: users } = useQuery<User[]>(
     "users",
     async () => {
       const res = await fetch("/api/user");
@@ -36,7 +36,7 @@ export default function IssuesPage() {
     reset,
     formState: { errors },
   } = useForm<Inputs>();
-  const mutation = useMutation<Inputs>(async (data) => {
+  const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch("/api/issue", {
       method: "POST",
       headers: {
@@ -69,8 +69,8 @@ export default function IssuesPage() {
         </div>
         <div>
           <label htmlFor="authorId">Author:</label>
-          <select {...register("authorId", { required: true })}>
-            {userData?.users.map(user => (
+          <select {...register("authorId", { required: true })} defaultValue={users?.[0]?.id}>
+            {users?.map(user => (
               <option key={user.id} value={user.id}>{user.name}</option>
             ))}
           </select>
@@ -78,8 +78,8 @@ export default function IssuesPage() {
         </div>
         <div>
           <label htmlFor="assigneeId">Assignee:</label>
-          <select {...register("assigneeId")}>
-            {userData?.users.map(user => (
+          <select {...register("assigneeId")} defaultValue={users?.[0]?.id}>
+            {users?.map(user => (
               <option key={user.id} value={user.id}>{user.name}</option>
             ))}
           </select>
@@ -90,13 +90,14 @@ export default function IssuesPage() {
       <hr />
 
       <div>
-        {issueData?.issues.map(issue => (
+        {issues?.map(issue => (
         <div key={issue.id} style={{ padding: 8 }}>
-          <p>title    : {issue.title}</p>
-          <p>content  : {issue.content}</p>
-          <p>author   : {issue.author.name}</p>
-          <p>assignee : {issue.assignee?.name ?? ''}</p>
-          <p>reviewers: {issue.reviewers.map(reviewer => reviewer.name).join(', ')}</p>
+          <p>title            : {issue.title}</p>
+          <p>content          : {issue.content}</p>
+          <p>author           : {issue.author.name}</p>
+          <p>assignee         : {issue.assignee?.name ?? ''}</p>
+          <p>reviewers(weak)  : {issue.weakReviewers.map(reviewer => reviewer.name).join(', ')}</p>
+          <p>reviewers(strong): {issue.strongReviewers.map(reviewer => reviewer.name).join(', ')}</p>
           <Link href={`/issue/${issue.id}`}>See</Link>
         </div>
         ))}

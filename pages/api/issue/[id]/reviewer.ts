@@ -6,7 +6,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const { id: issueId } = req.query;
-  const { reviewerId } = req.body;
+  const { type, reviewerId } = req.body;
 
   if (req.method !== "POST") {
     res.status(405);
@@ -24,15 +24,17 @@ export default async function handler(
     },
     include: {
       author: true,
-      asignee: true,
-      reviewers: true,
+      assignee: true,
+      weakReviewers: true,
+      strongReviewers: true,
+      approvedBy: true
     },
   });
   if (!issue) {
     res.status(404);
     return;
   }
-  if (issue.reviewers.some((reviewer) => reviewer.id === reviewerId)) {
+  if (issue.weakReviewers.concat(issue.strongReviewers).some((reviewer) => reviewer.id === reviewerId) ) {
     res.status(400);
     return;
   }
@@ -42,11 +44,19 @@ export default async function handler(
       id: issueId,
     },
     data: {
-      reviewers: {
-        connect: {
-          id: reviewerId,
+      ...(type === 'strong' ? {
+        strongReviewers: {
+          connect: {
+            id: reviewerId,
+          },
         },
-      },
+      } : {
+        weakReviewers: {
+          connect: {
+            id: reviewerId,
+          },
+        },
+        })
     },
   });
 

@@ -1,9 +1,11 @@
-import { Issue, User } from "@prisma/client";
+import { Comments } from "@/components/Comments";
+import { Issue, User, Comment } from "@prisma/client";
 import { useRouter } from "next/router";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
 
 type Inputs = {
+  type: "weak" | "strong";
   reviewerId: string;
 };
 
@@ -17,9 +19,16 @@ export default function IssueDetailsPage() {
   } = useForm<Inputs>();
 
   const { id } = router.query;
-  const { data: issueData, refetch } = useQuery<{
-    issue: Issue & { author: User; assignee: User; reviewers: User[] };
-  }>(
+  const { data: issue, refetch } = useQuery<
+    Issue & {
+      author: User;
+      assignee: User;
+      weakReviewers: User[];
+      strongReviewers: User[];
+      approvedBy: User[];
+      comments: Comment[];
+    }
+  >(
     "issue",
     async () => {
       const res = await fetch(`/api/issue/${id}`);
@@ -28,12 +37,12 @@ export default function IssueDetailsPage() {
     },
     { enabled: router.isReady }
   );
-  const { data: userData } = useQuery<{ users: User[] }>("users", async () => {
+  const { data: users } = useQuery<User[]>("users", async () => {
     const res = await fetch("/api/user");
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const mutation = useMutation<Inputs>(async (data) => {
+  const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch(`/api/issue/${id}/reviewer`, {
       method: "POST",
       headers: {
@@ -53,22 +62,36 @@ export default function IssueDetailsPage() {
     });
   };
 
+  if (typeof id !== 'string') return null
+
   return (
     <>
-      {issueData && (
+      {issue && (
         <div>
-          <p>Title : {issueData.issue.title}</p>
-          <p>Content : {issueData.issue.content}</p>
-          <p>Author : {issueData.issue.author.name}</p>
-          <p>Assignee : {issueData.issue.assignee?.name}</p>
+          <p>Title : {issue.title}</p>
+          <p>Content : {issue.content}</p>
+          <p>Author : {issue.author.name}</p>
+          <p>Assignee : {issue.assignee?.name}</p>
           <p>
-            Reviewers:{" "}
-            {issueData.issue.reviewers.map((user) => user.name).join(", ")}
+            Reviewers(weak):{" "}
+            {issue.weakReviewers.map((user) => user.name).join(", ")}
+          </p>
+          <p>
+            Reviewers(strong):{" "}
+            {issue.strongReviewers.map((user) => user.name).join(", ")}
           </p>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
+              <select {...register("type")}>
+                <option key="weak" value="weak">
+                  Weak
+                </option>
+                <option key="strong" value="strong">
+                  Strong
+                </option>
+              </select>
               <select {...register("reviewerId")}>
-                {userData?.users.map((user) => (
+                {users?.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name}
                   </option>
@@ -77,6 +100,8 @@ export default function IssueDetailsPage() {
             </div>
             <input type="submit" />
           </form>
+          <hr />
+          <Comments issueId={id} />
         </div>
       )}
     </>

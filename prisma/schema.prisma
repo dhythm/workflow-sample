@@ -11,32 +11,44 @@ datasource db {
 }
 
 model User {
-  id                     String   @id @default(uuid())
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                     String     @id @default(uuid())
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
   name                   String?
-  email                  String   @unique
-  issueCreated           Issue[]  @relation("author")
-  issueAssigned          Issue[]  @relation("assignee")
-  issueWeaklyReviewing   Issue[]  @relation("weakReviewer")
-  issueStronglyReviewing Issue[]  @relation("strongReviewer")
-  issueApproved          Issue[]  @relation("approvedBy")
+  email                  String     @unique
+  issueCreated           Issue[]    @relation("author")
+  issueAssigned          Issue[]    @relation("assignee")
+  issueWeaklyReviewing   Issue[]    @relation("weakReviewer")
+  issueStronglyReviewing Issue[]    @relation("strongReviewer")
+  comments               Comment[]
+  approvals              Approval[]
 }
 
 model Issue {
-  id              String    @id @default(uuid())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id              String     @id @default(uuid())
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
   title           String
   content         String
   comments        Comment[]
   authorId        String
-  author          User      @relation("author", fields: [authorId], references: [id])
+  author          User       @relation("author", fields: [authorId], references: [id])
   assigneeId      String?
-  assignee        User?     @relation("assignee", fields: [assigneeId], references: [id])
-  weakReviewers   User[]    @relation("weakReviewer")
-  strongReviewers User[]    @relation("strongReviewer")
-  approvedBy      User[]    @relation("approvedBy")
+  assignee        User?      @relation("assignee", fields: [assigneeId], references: [id])
+  weakReviewers   User[]     @relation("weakReviewer")
+  strongReviewers User[]     @relation("strongReviewer")
+  approvals       Approval[]
+}
+
+model Approval {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  approved  Boolean
+  issueId   String
+  issue     Issue?   @relation(fields: [issueId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Comment {
@@ -44,6 +56,8 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   content   String
-  Issue     Issue?   @relation(fields: [issueId], references: [id])
+  issue     Issue?   @relation(fields: [issueId], references: [id])
   issueId   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
 }

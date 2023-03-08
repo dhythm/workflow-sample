@@ -9,8 +9,8 @@
     "lint": "next lint",
     "db:create": "docker-compose run -p 5432:5432 -d postgres",
     "db:schema": "prisma generate",
-    "db:init": "rm -fr prisma/migrations && prisma migrate dev --name init",
     "db:seed": "ts-node-esm --project tsconfig.node.json prisma/seed.ts",
+    "db:init": "rm -fr prisma/migrations && prisma migrate dev --name init && yarn run db:seed",
     "db:migrate": "prisma migrate deploy --preview-feature"
   },
   "dependencies": {

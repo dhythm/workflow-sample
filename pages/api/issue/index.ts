@@ -5,9 +5,9 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log(req.body);
   if (req.method === "POST") {
     const { title, content, authorId, assigneeId } = req.body;
-    console.log(req.body)
     const issue = await prisma.issue.create({
       data: {
         title,
@@ -16,16 +16,18 @@ export default async function handler(
         assigneeId,
       },
     });
-    res.status(200).json({ issue });
+    res.status(200).json(issue);
     return;
   }
 
   const issues = await prisma.issue.findMany({
     include: {
       author: true,
-      asignee: true,
-      reviewers: true,
+      assignee: true,
+      weakReviewers: true,
+      strongReviewers: true,
+      approvedBy: true,
     },
   });
-  res.status(200).json({ issues });
+  res.status(200).json(issues);
 }

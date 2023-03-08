@@ -18,10 +18,11 @@ export default async function handler(
     },
     include: {
       author: true,
-      asignee: true,
-      reviewers: true,
+      assignee: true,
+      weakReviewers: true,
+      strongReviewers: true,
     },
   });
-  console.log({ id, issue });
-  res.status(200).json({ issue });
+
+  res.status(200).json(issue);
 }
