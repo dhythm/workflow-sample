@@ -21,7 +21,7 @@ export const Approvals: FC<Props> = ({ issueId }) => {
       return res.json();
     }
   );
-  const { data: approvals, refetch } = useQuery<Approval[]>(
+  const { data: approvals, refetch } = useQuery<(Approval & { user: User })[]>(
     "approvals",
     async () => {
       const res = await fetch(`/api/issue/${issueId}/approval`);
@@ -59,14 +59,14 @@ export const Approvals: FC<Props> = ({ issueId }) => {
     });
   };
 
-  if (!approvals) return null;
+  if (!issue || (issue.weakReviewers.length === 0 && issue.strongReviewers.length === 0 )) return null;
 
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div>
           <select {...register("userId", { required: true })}>
-            {issue?.weakReviewers.concat(issue.strongReviewers)?.map((user) => (
+            {issue.weakReviewers.concat(issue.strongReviewers)?.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name}
               </option>
@@ -84,6 +84,11 @@ export const Approvals: FC<Props> = ({ issueId }) => {
         </div>
         <input type="submit" />
       </form>
+      <>
+        {
+          approvals?.flatMap(approval => approval.approved ? <p>{approval.user.name}</p> : null)
+        }
+        </>
     </>
   );
 };

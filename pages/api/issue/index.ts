@@ -5,7 +5,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log(req.body);
   if (req.method === "POST") {
     const { title, content, authorId, assigneeId } = req.body;
     const issue = await prisma.issue.create({
@@ -26,7 +25,6 @@ export default async function handler(
       assignee: true,
       weakReviewers: true,
       strongReviewers: true,
-      approvedBy: true,
     },
   });
   res.status(200).json(issues);

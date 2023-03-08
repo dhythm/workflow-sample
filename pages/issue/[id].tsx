@@ -1,3 +1,4 @@
+import { Approvals } from "@/components/Approvals";
 import { Comments } from "@/components/Comments";
 import { Issue, User, Comment } from "@prisma/client";
 import { useRouter } from "next/router";
@@ -101,6 +102,7 @@ export default function IssueDetailsPage() {
             <input type="submit" />
           </form>
           <hr />
+          <Approvals issueId={id} />
           <Comments issueId={id} />
         </div>
       )}

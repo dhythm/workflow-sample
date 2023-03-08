@@ -30,12 +30,16 @@ export default function IssuesPage() {
       return res.json();
     }
   );
+
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Inputs>();
+  } = useForm<Inputs>({ defaultValues: {
+    authorId: users?.[0].id,
+    assigneeId: users?.[0].id,
+  }});
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch("/api/issue", {
       method: "POST",
@@ -69,7 +73,7 @@ export default function IssuesPage() {
         </div>
         <div>
           <label htmlFor="authorId">Author:</label>
-          <select {...register("authorId", { required: true })} defaultValue={users?.[0]?.id}>
+          <select {...register("authorId", { required: true })}>
             {users?.map(user => (
               <option key={user.id} value={user.id}>{user.name}</option>
             ))}
@@ -78,11 +82,12 @@ export default function IssuesPage() {
         </div>
         <div>
           <label htmlFor="assigneeId">Assignee:</label>
-          <select {...register("assigneeId")} defaultValue={users?.[0]?.id}>
+          <select {...register("assigneeId", { required: true })}>
             {users?.map(user => (
               <option key={user.id} value={user.id}>{user.name}</option>
             ))}
           </select>
+          {errors.assigneeId && <span>This field is required</span>}
         </div>
         <input type="submit" />
       </form>

@@ -27,7 +27,6 @@ export default async function handler(
       assignee: true,
       weakReviewers: true,
       strongReviewers: true,
-      approvedBy: true
     },
   });
   if (!issue) {
