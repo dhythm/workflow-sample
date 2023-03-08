@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "IssueStatus" AS ENUM ('created', 'reviewing', 'completed', 'canceled');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -14,6 +17,7 @@ CREATE TABLE "Issue" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "status" "IssueStatus" NOT NULL DEFAULT 'created',
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "authorId" TEXT NOT NULL,

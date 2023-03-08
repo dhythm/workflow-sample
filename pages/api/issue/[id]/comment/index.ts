@@ -14,14 +14,14 @@ export default async function handler(
 
   if (req.method === "POST") {
     const { content, userId } = req.body;
-    const comment = await prisma.comment.create({
+    await prisma.comment.create({
       data: {
         content,
         userId,
         issueId,
       },
     });
-    res.status(200).json(comment);
+    res.status(200).json({});
     return;
   }
 

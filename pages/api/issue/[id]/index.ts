@@ -12,6 +12,23 @@ export default async function handler(
     return;
   }
 
+  if (req.method === "POST") {
+    const { title, content, status, assigneeId } = req.body;
+    await prisma.issue.update({
+      where: {
+        id,
+      },
+      data: {
+        title,
+        content,
+        status,
+        assigneeId,
+      },
+    });
+    res.status(200).json({});
+    return;
+  }
+
   const issue = await prisma.issue.findUnique({
     where: {
       id,

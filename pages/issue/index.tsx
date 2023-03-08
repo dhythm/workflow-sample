@@ -11,8 +11,6 @@ type Inputs = {
   assigneeId: string;
 };
 
-
-
 export default function IssuesPage() {
   const { data: issues, refetch } = useQuery<(Issue & { author: User; assignee: User; weakReviewers: User[], strongReviewers: User[], approvedBy: User[] })[]>(
     "issues",
