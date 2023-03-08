@@ -12,32 +12,36 @@ type Inputs = {
 };
 
 export default function IssuesPage() {
-  const { data: issues, refetch } = useQuery<(Issue & { author: User; assignee: User; weakReviewers: User[], strongReviewers: User[], approvedBy: User[] })[]>(
-    "issues",
-    async () => {
-      const res = await fetch("/api/issue");
-      if (!res.ok) throw new Error(res.statusText);
-      return res.json();
-    }
-  );
-  const { data: users } = useQuery<User[]>(
-    "users",
-    async () => {
-      const res = await fetch("/api/user");
-      if (!res.ok) throw new Error(res.statusText);
-      return res.json();
-    }
-  );
+  const { data: issues, refetch } = useQuery<
+    (Issue & {
+      author: User;
+      assignee: User;
+      weakReviewers: User[];
+      strongReviewers: User[];
+      approvedBy: User[];
+    })[]
+  >("issues", async () => {
+    const res = await fetch("/api/issue");
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  });
+  const { data: users } = useQuery<User[]>("users", async () => {
+    const res = await fetch("/api/user");
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  });
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Inputs>({ defaultValues: {
-    authorId: users?.[0].id,
-    assigneeId: users?.[0].id,
-  }});
+  } = useForm<Inputs>({
+    defaultValues: {
+      authorId: users?.[0].id,
+      assigneeId: users?.[0].id,
+    },
+  });
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch("/api/issue", {
       method: "POST",
@@ -50,10 +54,12 @@ export default function IssuesPage() {
     return res.json();
   });
   const onSubmit: SubmitHandler<Inputs> = (data) => {
-    mutation.mutate(data, { onSuccess: () => {
-      reset()
-      refetch()
-    }});
+    mutation.mutate(data, {
+      onSuccess: () => {
+        reset();
+        refetch();
+      },
+    });
   };
 
   return (
@@ -72,8 +78,10 @@ export default function IssuesPage() {
         <div>
           <label htmlFor="authorId">Author:</label>
           <select {...register("authorId", { required: true })}>
-            {users?.map(user => (
-              <option key={user.id} value={user.id}>{user.name}</option>
+            {users?.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
             ))}
           </select>
           {errors.authorId && <span>This field is required</span>}
@@ -81,8 +89,10 @@ export default function IssuesPage() {
         <div>
           <label htmlFor="assigneeId">Assignee:</label>
           <select {...register("assigneeId", { required: true })}>
-            {users?.map(user => (
-              <option key={user.id} value={user.id}>{user.name}</option>
+            {users?.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
             ))}
           </select>
           {errors.assigneeId && <span>This field is required</span>}
@@ -92,20 +102,16 @@ export default function IssuesPage() {
 
       <hr />
 
-      <div>
-        {issues?.map(issue => (
-        <div key={issue.id} style={{ padding: 8 }}>
-          <p>title            : {issue.title}</p>
-          <p>content          : {issue.content}</p>
-          <p>author           : {issue.author.name}</p>
-          <p>assignee         : {issue.assignee?.name ?? ''}</p>
-          <p>reviewers(weak)  : {issue.weakReviewers.map(reviewer => reviewer.name).join(', ')}</p>
-          <p>reviewers(strong): {issue.strongReviewers.map(reviewer => reviewer.name).join(', ')}</p>
-          <Link href={`/issue/${issue.id}`}>See</Link>
-        </div>
+      <ul>
+        {issues?.map((issue) => (
+          <li key={issue.id}>
+            <Link href={`/issue/${issue.id}`}>
+              {issue.title}, {issue.status}, by {issue.author.name},{" "}
+              {issue.createdAt.toString()}
+            </Link>
+          </li>
         ))}
-
-      </div>
+      </ul>
     </>
   );
 }
