@@ -2,6 +2,7 @@ import { FC } from "react";
 import { Issue, User } from "@prisma/client";
 import { useMutation, useQuery } from "react-query";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { canChangeStatus } from "@/utils/issue-valicator";
 
 type Inputs = {
   type: "weak" | "strong";
@@ -18,14 +19,11 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
       weakReviewers: User[];
       strongReviewers: User[];
     }
-  >(
-    "issue",
-    async () => {
-      const res = await fetch(`/api/issue/${issueId}`);
-      if (!res.ok) throw new Error(res.statusText);
-      return res.json();
-    },
-  );
+  >("issue", async () => {
+    const res = await fetch(`/api/issue/${issueId}`);
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  });
 
   const { data: users } = useQuery<User[]>("users", async () => {
     const res = await fetch("/api/user");
@@ -33,12 +31,7 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
     return res.json();
   });
 
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-  } = useForm<Inputs>();
+  const { register, handleSubmit, reset } = useForm<Inputs>();
 
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch(`/api/issue/${issueId}/reviewer`, {
@@ -60,8 +53,7 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
     });
   };
 
-  if (!issue || !users) return null
-
+  if (!issue || !users) return null;
 
   return (
     <>
@@ -73,27 +65,28 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
         Reviewers(strong):{" "}
         {issue.strongReviewers.map((user) => user.name).join(", ")}
       </p>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div>
-          <select {...register("type")}>
-            <option key="weak" value="weak">
-              Weak
-            </option>
-            <option key="strong" value="strong">
-              Strong
-            </option>
-          </select>
-          <select {...register("userId")}>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
+      {canChangeStatus(issue.status) && (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div>
+            <select {...register("type")}>
+              <option key="weak" value="weak">
+                Weak
               </option>
-            ))}
-          </select>
-        </div>
-        <input type="submit" />
-      </form>
+              <option key="strong" value="strong">
+                Strong
+              </option>
+            </select>
+            <select {...register("userId")}>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <input type="submit" />
+        </form>
+      )}
     </>
   );
 };
-

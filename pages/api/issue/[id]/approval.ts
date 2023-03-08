@@ -1,4 +1,3 @@
-
 import { prisma } from "@/prisma/db.server";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -17,29 +16,43 @@ export default async function handler(
     const { userId, approved } = req.body;
     const issue = await prisma.issue.findUnique({
       where: {
-        id: issueId
+        id: issueId,
       },
       include: {
         weakReviewers: true,
         strongReviewers: true,
-      }
-    })
+        approvals: {
+          where: {
+            approved: true,
+          },
+        },
+      },
+    });
     if (!issue) {
       res.status(404).send("NOT FOUND");
       return;
     }
 
-    if (!approved && issue.strongReviewers.some(reviewer => reviewer.id === userId)) {
-      await prisma.approval.updateMany({
-        where: {
-          issueId,
-        },
-        data: {
-          approved: false,
-          updatedAt: new Date()
-        },
-      });
+    if (!approved) {
+      // Cannot reject if already approved
+      if (issue.approvals.some((approval) => approval.userId === userId)) {
+        res.status(400).send("BAD REQUEST");
+        return;
+      }
+      // Discard all approvals if strong reviewer rejects
+      if (issue.strongReviewers.some((reviewer) => reviewer.id === userId)) {
+        await prisma.approval.updateMany({
+          where: {
+            issueId,
+          },
+          data: {
+            approved: false,
+            updatedAt: new Date(),
+          },
+        });
+      }
     }
+
     await prisma.approval.create({
       data: {
         userId,
@@ -56,8 +69,8 @@ export default async function handler(
       issueId,
     },
     include: {
-      user: true
-    }
+      user: true,
+    },
   });
   res.status(200).json(approvals);
 }

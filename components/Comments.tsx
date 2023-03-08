@@ -2,6 +2,7 @@ import { FC } from "react";
 import { Comment, User } from "@prisma/client";
 import { useMutation, useQuery } from "react-query";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { canChangeStatus } from "@/utils/issue-valicator";
 
 type Inputs = {
   userId: string;
@@ -79,7 +80,9 @@ export const Comments: FC<Props> = ({ issueId }) => {
       {comments.map((comment) => (
         <div key={comment.id}>
           <p>{comment.createdAt.toString()}</p>
-          <p>{comment.content} by {comment.user.name}</p>
+          <p>
+            {comment.content} by {comment.user.name}
+          </p>
         </div>
       ))}
     </>

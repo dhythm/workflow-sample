@@ -1,6 +1,7 @@
 import { Approvals } from "@/components/Approvals";
 import { Comments } from "@/components/Comments";
 import { Reviewers } from "@/components/Reviewers";
+import { canChangeStatus } from "@/utils/issue-valicator";
 import { Issue, User, Comment, IssueStatus } from "@prisma/client";
 import { useRouter } from "next/router";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -76,28 +77,30 @@ export default function IssueDetailsPage() {
           <p>Status : {issue.status}</p>
           <p>Author : {issue.author.name}</p>
           <p>Assignee : {issue.assignee?.name}</p>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <select {...register("status")}>
-                {Object.keys(IssueStatus).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="assigneeId">Assignee:</label>
-              <select {...register("assigneeId")}>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input type="submit" />
-          </form>
+          {canChangeStatus(issue.status) && (
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div>
+                <select {...register("status")}>
+                  {Object.keys(IssueStatus).map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="assigneeId">Assignee:</label>
+                <select {...register("assigneeId")}>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <input type="submit" />
+            </form>
+          )}
           <hr />
           <Reviewers issueId={id} />
           <hr />
