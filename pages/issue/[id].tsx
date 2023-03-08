@@ -40,7 +40,11 @@ export default function IssueDetailsPage() {
     return res.json();
   });
 
-  const { register, handleSubmit, reset } = useForm<Inputs>();
+  const { register, handleSubmit, reset } = useForm<Inputs>({ 
+    defaultValues: {
+    status: issue?.status,
+    assigneeId: issue?.assigneeId ?? undefined,
+  }});
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch(`/api/issue/${id}`, {
       method: "POST",
@@ -94,9 +98,11 @@ export default function IssueDetailsPage() {
             </div>
             <input type="submit" />
           </form>
+          <hr />
           <Reviewers issueId={id} />
           <hr />
           <Approvals issueId={id} />
+          <hr />
           <Comments issueId={id} />
         </div>
       )}

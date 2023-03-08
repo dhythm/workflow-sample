@@ -9,12 +9,12 @@ export default async function handler(
   const { type, userId } = req.body;
 
   if (req.method !== "POST") {
-    res.status(405);
+    res.status(405).send("METHOD NOT ALLOWED");
     return;
   }
 
   if (typeof issueId !== "string") {
-    res.status(400);
+    res.status(400).send("BAD REQUEST");
     return;
   }
 
@@ -30,7 +30,7 @@ export default async function handler(
     },
   });
   if (!issue) {
-    res.status(404);
+    res.status(404).send("NOT FOUND");
     return;
   }
   if (
@@ -38,7 +38,7 @@ export default async function handler(
       .concat(issue.strongReviewers)
       .some((reviewer) => reviewer.id === userId)
   ) {
-    res.status(400);
+    res.status(400).send("BAD REQUEST");
     return;
   }
 

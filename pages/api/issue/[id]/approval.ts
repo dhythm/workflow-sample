@@ -9,7 +9,7 @@ export default async function handler(
   const { id: issueId } = req.query;
 
   if (typeof issueId !== "string") {
-    res.status(400);
+    res.status(400).send("BAD REQUEST");
     return;
   }
 
@@ -25,7 +25,7 @@ export default async function handler(
       }
     })
     if (!issue) {
-      res.status(404);
+      res.status(404).send("NOT FOUND");
       return;
     }
 
