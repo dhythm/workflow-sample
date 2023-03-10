@@ -16,12 +16,11 @@ import {
 import { Issue, User, Comment, IssueStatus } from "@prisma/client";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
+import { useForm } from "@mantine/form";
+import { z } from "zod";
 
 type Inputs = {
-  title: string;
-  content: string;
   status: IssueStatus;
   assigneeId: string;
 };
@@ -55,15 +54,26 @@ export default function IssueDetailsPage() {
     return res.json();
   });
 
-  const { register, handleSubmit, reset } = useForm<Inputs>();
+  const form = useForm<Inputs>({
+    validate: {
+      status: (value) => {
+        const parsed = z.nativeEnum(IssueStatus).safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      assigneeId: (value) => {
+        const parsed = z.string().uuid().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+    },
+  });
   useEffect(() => {
     if (issue) {
-      reset({
+      form.setValues({
         status: issue.status,
         assigneeId: issue.assigneeId ?? undefined,
       });
     }
-  }, [issue, reset]);
+  }, [issue]);
 
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch(`/api/issue/${id}`, {
@@ -76,11 +86,12 @@ export default function IssueDetailsPage() {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
+  const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        reset();
         refetch();
+        form.setValues({});
+        form.reset();
       },
     });
   };
@@ -91,7 +102,7 @@ export default function IssueDetailsPage() {
     <>
       {issue && (
         <div>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={form.onSubmit(onSubmit)}>
             <Card withBorder radius="md" p="md" className={classes.card}>
               <Card.Section className={classes.section}>
                 <Group position="apart" mt="md">
@@ -114,7 +125,6 @@ export default function IssueDetailsPage() {
               </Card.Section>
               <Card.Section className={classes.section}>
                 <Select
-                  {...register("status", { required: true })}
                   label="Status"
                   data={Object.keys(IssueStatus).map((status) => ({
                     value: status,
@@ -122,9 +132,9 @@ export default function IssueDetailsPage() {
                   }))}
                   defaultValue={issue.status}
                   readOnly={!canChangeStatus(issue.status)}
+                  {...form.getInputProps("status")}
                 />
                 <Select
-                  {...register("assigneeId", { required: true })}
                   label="Assignee"
                   data={users.map((user) => ({
                     value: user.id,
@@ -132,6 +142,7 @@ export default function IssueDetailsPage() {
                   }))}
                   defaultValue={issue.assigneeId}
                   readOnly={!canChangeStatus(issue.status)}
+                  {...form.getInputProps("assigneeId")}
                 />
                 <Space h="sm" />
                 <Button

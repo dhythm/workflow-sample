@@ -1,7 +1,8 @@
 import { Issue, User } from "@prisma/client";
 import { useQuery } from "react-query";
-import { SubmitHandler, useForm } from "react-hook-form";
+// import { SubmitHandler, useForm } from "react-hook-form";
 import { useMutation } from "react-query";
+import { useForm } from "@mantine/form";
 import Link from "next/link";
 import {
   Box,
@@ -16,6 +17,7 @@ import {
   createStyles,
 } from "@mantine/core";
 import { IconChevronRight } from "@tabler/icons-react";
+import { z } from "zod";
 
 type Inputs = {
   title: string;
@@ -44,12 +46,26 @@ export default function IssuesPage() {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Inputs>();
+  const form = useForm<Inputs>({
+    validate: {
+      title: (value) => {
+        const parsed = z.string().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      content: (value) => {
+        const parsed = z.string().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      authorId: (value) => {
+        const parsed = z.string().uuid().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      assigneeId: (value) => {
+        const parsed = z.string().uuid().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+    },
+  });
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch("/api/issue", {
       method: "POST",
@@ -61,11 +77,12 @@ export default function IssuesPage() {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
+  const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        reset();
         refetch();
+        form.setValues({});
+        form.reset();
       },
     });
   };
@@ -74,7 +91,7 @@ export default function IssuesPage() {
 
   return (
     <>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={form.onSubmit(onSubmit)}>
         <Box
           sx={{
             display: "flex",
@@ -84,36 +101,32 @@ export default function IssuesPage() {
           }}
         >
           <TextInput
-            {...register("title", { required: true })}
             label="Title"
             withAsterisk
-            {...(errors.title && { error: "Required" })}
+            {...form.getInputProps("title")}
           />
           <TextInput
-            {...register("content", { required: true })}
             label="Content"
             withAsterisk
-            {...(errors.content && { error: "Required" })}
+            {...form.getInputProps("content")}
           />
           <Select
-            {...register("authorId", { required: true })}
             label="Author"
             data={users.map((user) => ({
               value: user.id,
               label: user.name ?? "",
             }))}
             withAsterisk
-            {...(errors.authorId && { error: "Required" })}
+            {...form.getInputProps("authorId")}
           />
           <Select
-            {...register("assigneeId", { required: true })}
             label="Assignee"
             data={users.map((user) => ({
               value: user.id,
               label: user.name ?? "",
             }))}
             withAsterisk
-            {...(errors.assigneeId && { error: "Required" })}
+            {...form.getInputProps("assigneeId")}
           />
           <Space h="sm" />
           <Button

@@ -1,8 +1,10 @@
 import { FC } from "react";
 import { Comment, User } from "@prisma/client";
 import { useMutation, useQuery } from "react-query";
-import { SubmitHandler, useForm } from "react-hook-form";
 import { canChangeStatus } from "@/utils/issue-valicator";
+import { useForm } from "@mantine/form";
+import { z } from "zod";
+import { Button, Select, Space, TextInput } from "@mantine/core";
 
 type Inputs = {
   userId: string;
@@ -28,12 +30,18 @@ export const Comments: FC<Props> = ({ issueId }) => {
     return res.json();
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Inputs>();
+  const form = useForm<Inputs>({
+    validate: {
+      userId: (value) => {
+        const parsed = z.string().uuid().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      content: (value) => {
+        const parsed = z.string().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+    },
+  });
 
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const res = await fetch(`/api/issue/${issueId}/comment`, {
@@ -46,11 +54,12 @@ export const Comments: FC<Props> = ({ issueId }) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
+  const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        reset();
         refetch();
+        form.setValues({});
+        form.reset();
       },
     });
   };
@@ -59,24 +68,30 @@ export const Comments: FC<Props> = ({ issueId }) => {
 
   return (
     <>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div>
-          <select {...register("userId", { required: true })}>
-            {users?.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
-          {errors.userId && <span>This field is required</span>}
-          <div>
-            <label htmlFor="title">Comment:</label>
-            <input {...register("content", { required: true })} />
-            {errors.content && <span>This field is required</span>}
-          </div>
-        </div>
-        <input type="submit" />
+      <form onSubmit={form.onSubmit(onSubmit)}>
+        <Select
+          label="User ID"
+          data={(users ?? []).map((user) => ({
+            value: user.id,
+            label: user.name ?? "",
+          }))}
+          {...form.getInputProps("userId")}
+        />
+        <TextInput
+          label="Title"
+          withAsterisk
+          {...form.getInputProps("title")}
+        />
+        <Space h="sm" />
+        <Button
+          type="submit"
+          variant="gradient"
+          gradient={{ from: "indigo", to: "cyan" }}
+        >
+          Update
+        </Button>
       </form>
+
       {comments.map((comment) => (
         <div key={comment.id}>
           <p>{comment.createdAt.toString()}</p>

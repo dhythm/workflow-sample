@@ -1,8 +1,10 @@
 import { FC } from "react";
 import { Approval, Comment, Issue, User } from "@prisma/client";
 import { useMutation, useQuery } from "react-query";
-import { SubmitHandler, useForm } from "react-hook-form";
 import { canChangeStatus } from "@/utils/issue-valicator";
+import { useForm } from "@mantine/form";
+import { z } from "zod";
+import { Button, Select, Space } from "@mantine/core";
 
 type Inputs = {
   userId: string;
@@ -30,12 +32,18 @@ export const Approvals: FC<Props> = ({ issueId }) => {
     }
   );
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Inputs>();
+  const form = useForm<Inputs>({
+    validate: {
+      userId: (value) => {
+        const parsed = z.string().uuid().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      approved: (value) => {
+        const parsed = z.enum(["true", "false"]).safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+    },
+  });
 
   const mutation = useMutation<any, any, Inputs>(async (data) => {
     const { userId } = data;
@@ -50,11 +58,12 @@ export const Approvals: FC<Props> = ({ issueId }) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
+  const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        reset();
         refetch();
+        form.setValues({});
+        form.reset();
       },
     });
   };
@@ -65,35 +74,48 @@ export const Approvals: FC<Props> = ({ issueId }) => {
   )
     return null;
 
+  const reviewers = [
+    ...(issue.weakReviewers ?? []),
+    ...(issue.strongReviewers ?? []),
+  ];
+
   return (
     <>
       {canChangeStatus(issue.status) && (
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <select {...register("userId", { required: true })}>
-              {issue.weakReviewers
-                .concat(issue.strongReviewers)
-                ?.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-            </select>
-            {errors.userId && <span>This field is required</span>}
-            <select {...register("approved", { required: true })}>
-              <option key="approve" value={"true"}>
-                Approve
-              </option>
-              <option key="reject" value={"false"}>
-                Reject
-              </option>
-            </select>
-          </div>
-          <input type="submit" />
+        <form onSubmit={form.onSubmit(onSubmit)}>
+          <Select
+            label="User ID"
+            data={reviewers.map((user) => ({
+              value: user.id,
+              label: user.name ?? "",
+            }))}
+            defaultValue={issue.status}
+            readOnly={!canChangeStatus(issue.status)}
+            {...form.getInputProps("userId")}
+          />
+          <Select
+            label="Approved"
+            data={[
+              { value: "true", label: "Approve" },
+              { value: "false", label: "Reject" },
+            ]}
+            defaultValue={issue.status}
+            readOnly={!canChangeStatus(issue.status)}
+            {...form.getInputProps("approved")}
+          />
+          <Space h="sm" />
+          <Button
+            type="submit"
+            variant="gradient"
+            gradient={{ from: "indigo", to: "cyan" }}
+          >
+            Update
+          </Button>
         </form>
       )}
       <div>
-        Approved by {approvals
+        Approved by{" "}
+        {approvals
           ?.flatMap((approval) => (approval.approved ? approval.user.name : []))
           .join(", ")}
       </div>
