@@ -16,7 +16,7 @@ type Props = {
 
 export const Threads: FC<Props> = ({ issueId }) => {
   const { data: threads, refetch } = useQuery<
-    (Thread & { comments: Comment[] })[]
+    (Thread & { comments: (Comment & { user: User })[] })[]
   >("threads", async () => {
     const res = await fetch(`/api/issue/${issueId}/threads`);
     if (!res.ok) throw new Error(res.statusText);

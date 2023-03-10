@@ -9,12 +9,11 @@ import {
   Button,
   Group,
   Select,
-  Space,
   TextInput,
   Text,
-  Paper,
   UnstyledButton,
   createStyles,
+  SimpleGrid,
 } from "@mantine/core";
 import { IconChevronRight } from "@tabler/icons-react";
 import { z } from "zod";
@@ -32,9 +31,8 @@ export default function IssuesPage() {
     (Issue & {
       author: User;
       assignee: User;
-      weakReviewers: User[];
-      strongReviewers: User[];
-      approvedBy: User[];
+      reviewers: User[];
+      approvers: User[];
     })[]
   >("issues", async () => {
     const res = await fetch("/api/issue");
@@ -46,7 +44,14 @@ export default function IssuesPage() {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
+
   const form = useForm<Inputs>({
+    initialValues: {
+      title: "",
+      content: "",
+      authorId: "",
+      assigneeId: "",
+    },
     validate: {
       title: (value) => {
         const parsed = z.string().safeParse(value);
@@ -81,7 +86,6 @@ export default function IssuesPage() {
     mutation.mutate(data, {
       onSuccess: () => {
         refetch();
-        form.setValues({});
         form.reset();
       },
     });
@@ -90,14 +94,14 @@ export default function IssuesPage() {
   if (!users || !issues) return null;
 
   return (
-    <>
+    <Box sx={{ padding: "0 24px" }}>
+      <h1>Create Issue</h1>
       <form onSubmit={form.onSubmit(onSubmit)}>
         <Box
           sx={{
             display: "flex",
             flexDirection: "column",
             rowGap: 8,
-            padding: 24,
           }}
         >
           <TextInput
@@ -110,32 +114,36 @@ export default function IssuesPage() {
             withAsterisk
             {...form.getInputProps("content")}
           />
-          <Select
-            label="Author"
-            data={users.map((user) => ({
-              value: user.id,
-              label: user.name ?? "",
-            }))}
-            withAsterisk
-            {...form.getInputProps("authorId")}
-          />
-          <Select
-            label="Assignee"
-            data={users.map((user) => ({
-              value: user.id,
-              label: user.name ?? "",
-            }))}
-            withAsterisk
-            {...form.getInputProps("assigneeId")}
-          />
-          <Space h="sm" />
-          <Button
-            type="submit"
-            variant="gradient"
-            gradient={{ from: "indigo", to: "cyan" }}
-          >
-            Create
-          </Button>
+          <SimpleGrid cols={2} breakpoints={[{ maxWidth: "sm", cols: 1 }]}>
+            <Select
+              label="Author"
+              data={users.map((user) => ({
+                value: user.id,
+                label: user.name ?? "",
+              }))}
+              withAsterisk
+              {...form.getInputProps("authorId")}
+            />
+            <Select
+              label="Assignee"
+              data={users.map((user) => ({
+                value: user.id,
+                label: user.name ?? "",
+              }))}
+              withAsterisk
+              {...form.getInputProps("assigneeId")}
+            />
+          </SimpleGrid>
+          <Group position="center" mt="xl" mb="xl">
+            <Button
+              type="submit"
+              variant="gradient"
+              size="md"
+              gradient={{ from: "indigo", to: "cyan" }}
+            >
+              Create
+            </Button>
+          </Group>
         </Box>
       </form>
 
@@ -167,7 +175,7 @@ export default function IssuesPage() {
           </Link>
         </UnstyledButton>
       ))}
-    </>
+    </Box>
   );
 }
 

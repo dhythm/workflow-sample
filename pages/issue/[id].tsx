@@ -4,12 +4,14 @@ import { Reviewers } from "@/components/Reviewers";
 import { canChangeStatus } from "@/utils/issue-valicator";
 import {
   Badge,
+  Box,
   Button,
   Card,
   createStyles,
   Group,
   rem,
   Select,
+  SimpleGrid,
   Space,
   Text,
 } from "@mantine/core";
@@ -27,16 +29,16 @@ type Inputs = {
 };
 
 export default function IssueDetailsPage() {
-  const router = useRouter();
   const { classes, theme } = useStyles();
-
+  const router = useRouter();
   const { id } = router.query;
+
   const { data: issue, refetch } = useQuery<
     Issue & {
       author: User;
       assignee: User;
-      weakReviewers: User[];
-      strongReviewers: User[];
+      reviewers: User[];
+      approvers: User[];
       comments: Comment[];
     }
   >(
@@ -91,8 +93,6 @@ export default function IssueDetailsPage() {
     mutation.mutate(data, {
       onSuccess: () => {
         refetch();
-        form.setValues({});
-        form.reset();
       },
     });
   };
@@ -100,7 +100,8 @@ export default function IssueDetailsPage() {
   if (typeof id !== "string" || !users) return null;
 
   return (
-    <>
+    <Box sx={{ padding: "0 24px" }}>
+      <h1>Issue Details</h1>
       {issue && (
         <div>
           <form onSubmit={form.onSubmit(onSubmit)}>
@@ -115,38 +116,43 @@ export default function IssueDetailsPage() {
                 <Text fz="sm" mt="xs">
                   {issue.content}
                 </Text>
-              </Card.Section>
-              <Card.Section className={classes.section}>
                 <Group position="apart" mt="md">
-                  <Text fz="md">{issue.author.name}</Text>
-                  <Text fz="md">
+                  <Text fz="sm">{issue.author.name}</Text>
+                  <Text fz="xs">
                     {new Date(issue.createdAt).toLocaleString("ja-JS")}
                   </Text>
                 </Group>
               </Card.Section>
               <Card.Section className={classes.section}>
-                <Select
-                  label="Status"
-                  data={Object.keys(IssueStatus).map((status) => ({
-                    value: status,
-                    label: status,
-                  }))}
-                  defaultValue={issue.status}
-                  readOnly={!canChangeStatus(issue.status)}
-                  {...form.getInputProps("status")}
-                />
-                <Select
-                  label="Assignee"
-                  data={users.map((user) => ({
-                    value: user.id,
-                    label: user.name ?? "",
-                  }))}
-                  defaultValue={issue.assigneeId}
-                  readOnly={!canChangeStatus(issue.status)}
-                  {...form.getInputProps("assigneeId")}
-                />
-                <Space h="sm" />
+                <SimpleGrid
+                  mt="sm"
+                  cols={2}
+                  breakpoints={[{ maxWidth: "sm", cols: 1 }]}
+                >
+                  <Select
+                    label="Status"
+                    data={Object.keys(IssueStatus).map((status) => ({
+                      value: status,
+                      label: status,
+                    }))}
+                    withinPortal
+                    readOnly={!canChangeStatus(issue.status)}
+                    {...form.getInputProps("status")}
+                  />
+                  <Select
+                    label="Assignee"
+                    data={users.map((user) => ({
+                      value: user.id,
+                      label: user.name ?? "",
+                    }))}
+                    withinPortal
+                    dropdownPosition="bottom"
+                    readOnly={!canChangeStatus(issue.status)}
+                    {...form.getInputProps("assigneeId")}
+                  />
+                </SimpleGrid>
                 <Button
+                  mt="md"
                   type="submit"
                   variant="gradient"
                   gradient={{ from: "indigo", to: "cyan" }}
@@ -156,15 +162,15 @@ export default function IssueDetailsPage() {
               </Card.Section>
             </Card>
           </form>
-          <hr />
+
           <Reviewers issueId={id} />
-          <hr />
+
           <Approvals issueId={id} />
-          <hr />
+
           <Threads issueId={id} />
         </div>
       )}
-    </>
+    </Box>
   );
 }
 

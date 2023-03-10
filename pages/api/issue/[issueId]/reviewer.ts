@@ -5,7 +5,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { id: issueId } = req.query;
+  const { issueId } = req.query;
   const { type, userId } = req.body;
 
   if (req.method !== "POST") {
@@ -25,8 +25,8 @@ export default async function handler(
     include: {
       author: true,
       assignee: true,
-      weakReviewers: true,
-      strongReviewers: true,
+      reviewers: true,
+      approvers: true,
     },
   });
   if (!issue) {
@@ -34,9 +34,7 @@ export default async function handler(
     return;
   }
   if (
-    issue.weakReviewers
-      .concat(issue.strongReviewers)
-      .some((reviewer) => reviewer.id === userId)
+    [...issue.reviewers, ...issue.approvers].some((user) => user.id === userId)
   ) {
     res.status(400).send("BAD REQUEST");
     return;
@@ -47,16 +45,16 @@ export default async function handler(
       id: issueId,
     },
     data: {
-      ...(type === "strong"
+      ...(type === "approver"
         ? {
-            strongReviewers: {
+            approvals: {
               connect: {
                 id: userId,
               },
             },
           }
         : {
-            weakReviewers: {
+            reviewers: {
               connect: {
                 id: userId,
               },

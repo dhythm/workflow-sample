@@ -17,7 +17,7 @@ type Props = {
 
 export const Approvals: FC<Props> = ({ issueId }) => {
   const { data: issue } = useQuery<
-    Issue & { weakReviewers: User[]; strongReviewers: User[] }
+    Issue & { reviewers: User[]; approvers: User[] }
   >("issue", async () => {
     const res = await fetch(`/api/issue/${issueId}`);
     if (!res.ok) throw new Error(res.statusText);
@@ -68,16 +68,10 @@ export const Approvals: FC<Props> = ({ issueId }) => {
     });
   };
 
-  if (
-    !issue ||
-    (issue.weakReviewers.length === 0 && issue.strongReviewers.length === 0)
-  )
+  if (!issue || (issue.reviewers.length === 0 && issue.approvers.length === 0))
     return null;
 
-  const reviewers = [
-    ...(issue.weakReviewers ?? []),
-    ...(issue.strongReviewers ?? []),
-  ];
+  const checkers = [...(issue.reviewers ?? []), ...(issue.approvers ?? [])];
 
   return (
     <>
@@ -85,7 +79,7 @@ export const Approvals: FC<Props> = ({ issueId }) => {
         <form onSubmit={form.onSubmit(onSubmit)}>
           <Select
             label="User ID"
-            data={reviewers.map((user) => ({
+            data={checkers.map((user) => ({
               value: user.id,
               label: user.name ?? "",
             }))}

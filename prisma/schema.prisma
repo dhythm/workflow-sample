@@ -11,34 +11,34 @@ datasource db {
 }
 
 model User {
-  id                     String     @id @default(uuid())
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-  name                   String?
-  email                  String     @unique
-  issueCreated           Issue[]    @relation("author")
-  issueAssigned          Issue[]    @relation("assignee")
-  issueWeaklyReviewing   Issue[]    @relation("weakReviewer")
-  issueStronglyReviewing Issue[]    @relation("strongReviewer")
-  comments               Comment[]
-  approvals              Approval[]
+  id              String     @id @default(uuid())
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  name            String?
+  email           String     @unique
+  issuesCreated   Issue[]    @relation("author")
+  issuesAssigned  Issue[]    @relation("assignee")
+  issuesReviewing Issue[]    @relation("reviewer")
+  issuesApproving Issue[]    @relation("approver")
+  comments        Comment[]
+  approvals       Approval[]
 }
 
 model Issue {
-  id              String      @id @default(uuid())
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  status          IssueStatus @default(created)
-  title           String
-  content         String
-  authorId        String
-  author          User        @relation("author", fields: [authorId], references: [id])
-  assigneeId      String?
-  assignee        User?       @relation("assignee", fields: [assigneeId], references: [id])
-  weakReviewers   User[]      @relation("weakReviewer")
-  strongReviewers User[]      @relation("strongReviewer")
-  approvals       Approval[]
-  threads         Thread[]
+  id         String      @id @default(uuid())
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  status     IssueStatus @default(created)
+  title      String
+  content    String
+  authorId   String
+  author     User        @relation("author", fields: [authorId], references: [id])
+  assigneeId String?
+  assignee   User?       @relation("assignee", fields: [assigneeId], references: [id])
+  reviewers  User[]      @relation("reviewer")
+  approvers  User[]      @relation("approver")
+  approvals  Approval[]
+  threads    Thread[]
 }
 
 model Approval {

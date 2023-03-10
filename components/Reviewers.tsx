@@ -4,10 +4,18 @@ import { useMutation, useQuery } from "react-query";
 import { canChangeStatus } from "@/utils/issue-valicator";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
-import { Button, Select, Space } from "@mantine/core";
+import {
+  Badge,
+  Button,
+  ScrollArea,
+  Select,
+  Space,
+  Table,
+  Text,
+} from "@mantine/core";
 
 type Inputs = {
-  type: "weak" | "strong";
+  type: "reviewer" | "approver";
   userId: string;
 };
 
@@ -18,8 +26,8 @@ type Props = {
 export const Reviewers: FC<Props> = ({ issueId }) => {
   const { data: issue, refetch } = useQuery<
     Issue & {
-      weakReviewers: User[];
-      strongReviewers: User[];
+      reviewers: User[];
+      approvers: User[];
     }
   >("issue", async () => {
     const res = await fetch(`/api/issue/${issueId}`);
@@ -36,7 +44,7 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
   const form = useForm<Inputs>({
     validate: {
       type: (value) => {
-        const parsed = z.enum(["weak", "strong"]).safeParse(value);
+        const parsed = z.enum(["reviewer", "approver"]).safeParse(value);
         return parsed.success ? null : parsed.error.message;
       },
       userId: (value) => {
@@ -69,23 +77,43 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
 
   if (!issue || !users) return null;
 
+  const rows = [...issue.reviewers, ...issue.approvers].map((user) => {
+    const isApprover = issue.approvers.some((u) => u.id === user.id);
+    return (
+      <tr key={user.id}>
+        <td>
+          <Text fz="sm" fw={500}>
+            {user.name ?? ""}
+          </Text>
+        </td>
+        <td>
+          <Badge>{isApprover ? "Approver" : "Reviewer"}</Badge>
+        </td>
+      </tr>
+    );
+  });
+
   return (
     <>
-      <p>
-        Reviewers(weak):{" "}
-        {issue.weakReviewers.map((user) => user.name).join(", ")}
-      </p>
-      <p>
-        Reviewers(strong):{" "}
-        {issue.strongReviewers.map((user) => user.name).join(", ")}
-      </p>
+      <ScrollArea>
+        <Table sx={{ minWidth: 600 }} verticalSpacing="sm">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </Table>
+      </ScrollArea>
       {canChangeStatus(issue.status) && (
         <form onSubmit={form.onSubmit(onSubmit)}>
           <Select
             label="Type"
             data={[
-              { value: "weak", label: "Weak" },
-              { value: "strong", label: "Strong" },
+              { value: "reviewer", label: "Reviewer" },
+              { value: "approver", label: "Approver" },
             ]}
             {...form.getInputProps("type")}
           />

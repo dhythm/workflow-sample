@@ -5,7 +5,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { id } = req.query;
+  const { issueId: id } = req.query;
 
   if (typeof id !== "string") {
     res.status(400).send("BAD REQUEST");
@@ -19,8 +19,8 @@ export default async function handler(
     include: {
       author: true,
       assignee: true,
-      weakReviewers: true,
-      strongReviewers: true,
+      reviewers: true,
+      approvers: true,
       approvals: {
         where: {
           approved: true,
@@ -35,7 +35,7 @@ export default async function handler(
 
   if (req.method === "POST") {
     const { title, content, status, assigneeId } = req.body;
-    const reviewers = issue.weakReviewers.concat(issue.strongReviewers);
+    const reviewers = [...issue.reviewers, ...issue.approvers];
     if (
       status === "completed" &&
       !reviewers.every((reviewer) =>

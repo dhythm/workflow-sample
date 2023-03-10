@@ -5,7 +5,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { id: issueId } = req.query;
+  const { issueId } = req.query;
 
   if (typeof issueId !== "string") {
     res.status(400).send("BAD REQUEST");
@@ -19,8 +19,8 @@ export default async function handler(
         id: issueId,
       },
       include: {
-        weakReviewers: true,
-        strongReviewers: true,
+        reviewers: true,
+        approvers: true,
         approvals: {
           where: {
             approved: true,
@@ -40,7 +40,7 @@ export default async function handler(
         return;
       }
       // Discard all approvals if strong reviewer rejects
-      if (issue.strongReviewers.some((reviewer) => reviewer.id === userId)) {
+      if (issue.approvers.some((user) => user.id === userId)) {
         await prisma.approval.updateMany({
           where: {
             issueId,

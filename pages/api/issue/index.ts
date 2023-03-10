@@ -23,8 +23,8 @@ export default async function handler(
     include: {
       author: true,
       assignee: true,
-      weakReviewers: true,
-      strongReviewers: true,
+      reviewers: true,
+      approvers: true,
     },
   });
   res.status(200).json(issues);

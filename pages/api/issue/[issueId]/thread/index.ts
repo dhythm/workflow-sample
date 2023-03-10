@@ -5,7 +5,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { id: issueId } = req.query;
+  const { issueId } = req.query;
 
   if (typeof issueId !== "string") {
     res.status(400).send("BAD REQUEST");
@@ -14,24 +14,32 @@ export default async function handler(
 
   if (req.method === "POST") {
     const { content, userId } = req.body;
-    await prisma.comment.create({
+    await prisma.thread.create({
       data: {
-        content,
-        userId,
         issueId,
+        comments: {
+          create: {
+            userId,
+            content,
+          },
+        },
       },
     });
     res.status(200).json({});
     return;
   }
 
-  const comments = await prisma.comment.findMany({
+  const threads = await prisma.thread.findMany({
     where: {
       issueId,
     },
     include: {
-      user: true
-    }
+      comments: {
+        include: {
+          user: true,
+        },
+      },
+    },
   });
-  res.status(200).json(comments);
+  res.status(200).json(threads);
 }
