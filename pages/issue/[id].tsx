@@ -19,6 +19,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery } from "react-query";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
+import { Threads } from "@/components/Threads";
 
 type Inputs = {
   status: IssueStatus;
@@ -160,7 +161,7 @@ export default function IssueDetailsPage() {
           <hr />
           <Approvals issueId={id} />
           <hr />
-          <Comments issueId={id} />
+          <Threads issueId={id} />
         </div>
       )}
     </>
