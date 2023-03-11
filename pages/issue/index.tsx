@@ -95,7 +95,7 @@ export default function IssuesPage() {
 
   return (
     <Box sx={{ padding: "0 24px" }}>
-      <h1>Create Issue</h1>
+      <h2>Create Issue</h2>
       <form onSubmit={form.onSubmit(onSubmit)}>
         <Box
           sx={{
@@ -147,6 +147,7 @@ export default function IssuesPage() {
         </Box>
       </form>
 
+      <h2>Issues</h2>
       {issues.map((issue) => (
         <UnstyledButton key={issue.id} className={classes.issue}>
           <Link href={`/issue/${issue.id}`}>

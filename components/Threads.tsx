@@ -1,4 +1,14 @@
-import { Button, Paper, Select, Space, TextInput, Text } from "@mantine/core";
+import {
+  Button,
+  Paper,
+  Select,
+  Space,
+  TextInput,
+  Text,
+  Box,
+  SimpleGrid,
+  Group,
+} from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Thread, Comment, User } from "@prisma/client";
 import { FC } from "react";
@@ -7,21 +17,16 @@ import { z } from "zod";
 
 type Inputs = {
   userId: string;
+  title: string;
   content: string;
 };
 
 type Props = {
   issueId: string;
+  refetch?: () => void;
 };
 
-export const Threads: FC<Props> = ({ issueId }) => {
-  const { data: threads, refetch } = useQuery<
-    (Thread & { comments: (Comment & { user: User })[] })[]
-  >("threads", async () => {
-    const res = await fetch(`/api/issue/${issueId}/threads`);
-    if (!res.ok) throw new Error(res.statusText);
-    return res.json();
-  });
+export const Threads: FC<Props> = ({ issueId, refetch }) => {
   const { data: users } = useQuery<User[]>("users", async () => {
     const res = await fetch("/api/user");
     if (!res.ok) throw new Error(res.statusText);
@@ -29,9 +34,18 @@ export const Threads: FC<Props> = ({ issueId }) => {
   });
 
   const form = useForm<Inputs>({
+    initialValues: {
+      userId: "",
+      title: "",
+      content: "",
+    },
     validate: {
       userId: (value) => {
         const parsed = z.string().uuid().safeParse(value);
+        return parsed.success ? null : parsed.error.message;
+      },
+      title: (value) => {
+        const parsed = z.string().safeParse(value);
         return parsed.success ? null : parsed.error.message;
       },
       content: (value) => {
@@ -55,51 +69,56 @@ export const Threads: FC<Props> = ({ issueId }) => {
   const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        refetch();
-        form.setValues({});
+        refetch?.();
         form.reset();
       },
     });
   };
 
-  if (!threads) return null;
+  if (!users) return null;
 
   return (
     <>
+      <h2>Add Comment</h2>
       <form onSubmit={form.onSubmit(onSubmit)}>
-        <Select
-          label="User ID"
-          data={(users ?? []).map((user) => ({
-            value: user.id,
-            label: user.name ?? "",
-          }))}
-          {...form.getInputProps("userId")}
-        />
-        <TextInput
-          label="Title"
-          withAsterisk
-          {...form.getInputProps("title")}
-        />
-        <Space h="sm" />
-        <Button
-          type="submit"
-          variant="gradient"
-          gradient={{ from: "indigo", to: "cyan" }}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            rowGap: 8,
+          }}
         >
-          Create Thread
-        </Button>
+          <SimpleGrid cols={2} breakpoints={[{ maxWidth: "sm", cols: 1 }]}>
+            <Select
+              label="User"
+              data={(users ?? []).map((user) => ({
+                value: user.id,
+                label: user.name ?? "",
+              }))}
+              {...form.getInputProps("userId")}
+            />
+          </SimpleGrid>
+          <TextInput
+            label="Title"
+            withAsterisk
+            {...form.getInputProps("title")}
+          />
+          <TextInput
+            label="Content"
+            withAsterisk
+            {...form.getInputProps("content")}
+          />
+          <Group position="left" mt="sm">
+            <Button
+              type="submit"
+              variant="gradient"
+              gradient={{ from: "indigo", to: "cyan" }}
+            >
+              Add
+            </Button>
+          </Group>
+        </Box>
       </form>
-
-      {threads.map((thread) => (
-        <Paper key={thread.id} withBorder radius="md">
-          <div>
-            <Text fz="sm">{thread.comments[0].user.name}</Text>
-            <Text fz="xs" c="dimmed">
-              {new Date(thread.comments[0].createdAt).toLocaleString("ja-JP")}
-            </Text>
-          </div>
-        </Paper>
-      ))}
     </>
   );
 };

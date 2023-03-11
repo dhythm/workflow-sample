@@ -1,10 +1,10 @@
 import { FC } from "react";
-import { Approval, Comment, Issue, User } from "@prisma/client";
+import { Issue, User } from "@prisma/client";
 import { useMutation, useQuery } from "react-query";
 import { canChangeStatus } from "@/utils/issue-valicator";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
-import { Button, Select, Space } from "@mantine/core";
+import { Button, Group, Radio, Select, SimpleGrid } from "@mantine/core";
 
 type Inputs = {
   userId: string;
@@ -13,9 +13,10 @@ type Inputs = {
 
 type Props = {
   issueId: string;
+  refetch?: () => void;
 };
 
-export const Approvals: FC<Props> = ({ issueId }) => {
+export const ApproveIssue: FC<Props> = ({ issueId, refetch }) => {
   const { data: issue } = useQuery<
     Issue & { reviewers: User[]; approvers: User[] }
   >("issue", async () => {
@@ -23,16 +24,12 @@ export const Approvals: FC<Props> = ({ issueId }) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
   });
-  const { data: approvals, refetch } = useQuery<(Approval & { user: User })[]>(
-    "approvals",
-    async () => {
-      const res = await fetch(`/api/issue/${issueId}/approval`);
-      if (!res.ok) throw new Error(res.statusText);
-      return res.json();
-    }
-  );
 
   const form = useForm<Inputs>({
+    initialValues: {
+      userId: "",
+      approved: "true",
+    },
     validate: {
       userId: (value) => {
         const parsed = z.string().uuid().safeParse(value);
@@ -61,8 +58,7 @@ export const Approvals: FC<Props> = ({ issueId }) => {
   const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        refetch();
-        form.setValues({});
+        refetch?.();
         form.reset();
       },
     });
@@ -73,46 +69,42 @@ export const Approvals: FC<Props> = ({ issueId }) => {
 
   const checkers = [...(issue.reviewers ?? []), ...(issue.approvers ?? [])];
 
+  if (!canChangeStatus(issue.status)) return null;
+
   return (
     <>
-      {canChangeStatus(issue.status) && (
-        <form onSubmit={form.onSubmit(onSubmit)}>
+      <h2>Approve Issue</h2>
+
+      <form onSubmit={form.onSubmit(onSubmit)}>
+        <SimpleGrid cols={2} breakpoints={[{ maxWidth: "sm", cols: 1 }]}>
           <Select
-            label="User ID"
+            label="Reviewer"
             data={checkers.map((user) => ({
               value: user.id,
               label: user.name ?? "",
             }))}
-            defaultValue={issue.status}
-            readOnly={!canChangeStatus(issue.status)}
             {...form.getInputProps("userId")}
           />
-          <Select
-            label="Approved"
-            data={[
-              { value: "true", label: "Approve" },
-              { value: "false", label: "Reject" },
-            ]}
-            defaultValue={issue.status}
-            readOnly={!canChangeStatus(issue.status)}
+          <Radio.Group
+            label="Status"
+            name="approved"
             {...form.getInputProps("approved")}
-          />
-          <Space h="sm" />
-          <Button
-            type="submit"
-            variant="gradient"
-            gradient={{ from: "indigo", to: "cyan" }}
           >
-            Update
-          </Button>
-        </form>
-      )}
-      <div>
-        Approved by{" "}
-        {approvals
-          ?.flatMap((approval) => (approval.approved ? approval.user.name : []))
-          .join(", ")}
-      </div>
+            <Group mt="xs">
+              <Radio value="true" label="Approve" />
+              <Radio value="false" label="Reject" />
+            </Group>
+          </Radio.Group>
+        </SimpleGrid>
+        <Button
+          mt="md"
+          type="submit"
+          variant="gradient"
+          gradient={{ from: "indigo", to: "cyan" }}
+        >
+          Send
+        </Button>
+      </form>
     </>
   );
 };

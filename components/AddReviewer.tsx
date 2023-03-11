@@ -4,15 +4,7 @@ import { useMutation, useQuery } from "react-query";
 import { canChangeStatus } from "@/utils/issue-valicator";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
-import {
-  Badge,
-  Button,
-  ScrollArea,
-  Select,
-  Space,
-  Table,
-  Text,
-} from "@mantine/core";
+import { Button, Select, SimpleGrid } from "@mantine/core";
 
 type Inputs = {
   type: "reviewer" | "approver";
@@ -21,10 +13,11 @@ type Inputs = {
 
 type Props = {
   issueId: string;
+  refetch?: () => void;
 };
 
-export const Reviewers: FC<Props> = ({ issueId }) => {
-  const { data: issue, refetch } = useQuery<
+export const AddReviewer: FC<Props> = ({ issueId, refetch }) => {
+  const { data: issue, refetch: refetchIssue } = useQuery<
     Issue & {
       reviewers: User[];
       approvers: User[];
@@ -42,6 +35,10 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
   });
 
   const form = useForm<Inputs>({
+    initialValues: {
+      type: "reviewer",
+      userId: "",
+    },
     validate: {
       type: (value) => {
         const parsed = z.enum(["reviewer", "approver"]).safeParse(value);
@@ -68,47 +65,28 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
   const onSubmit = (data: Inputs) => {
     mutation.mutate(data, {
       onSuccess: () => {
-        refetch();
-        form.setValues({});
+        refetchIssue();
+        refetch?.();
         form.reset();
       },
     });
   };
 
   if (!issue || !users) return null;
+  if (!canChangeStatus(issue.status)) return null;
 
-  const rows = [...issue.reviewers, ...issue.approvers].map((user) => {
-    const isApprover = issue.approvers.some((u) => u.id === user.id);
-    return (
-      <tr key={user.id}>
-        <td>
-          <Text fz="sm" fw={500}>
-            {user.name ?? ""}
-          </Text>
-        </td>
-        <td>
-          <Badge>{isApprover ? "Approver" : "Reviewer"}</Badge>
-        </td>
-      </tr>
-    );
-  });
+  const candidates = users.filter(
+    (user) =>
+      ![...issue.reviewers, ...issue.approvers].some((u) => u.id === user.id) &&
+      user.id !== issue.assigneeId
+  );
 
   return (
     <>
-      <ScrollArea>
-        <Table sx={{ minWidth: 600 }} verticalSpacing="sm">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </Table>
-      </ScrollArea>
-      {canChangeStatus(issue.status) && (
-        <form onSubmit={form.onSubmit(onSubmit)}>
+      <h2>Add Reviewer</h2>
+
+      <form onSubmit={form.onSubmit(onSubmit)}>
+        <SimpleGrid cols={2} breakpoints={[{ maxWidth: "sm", cols: 1 }]}>
           <Select
             label="Type"
             data={[
@@ -118,23 +96,23 @@ export const Reviewers: FC<Props> = ({ issueId }) => {
             {...form.getInputProps("type")}
           />
           <Select
-            label="User ID"
-            data={(users ?? []).map((user) => ({
+            label="Reviewer"
+            data={candidates.map((user) => ({
               value: user.id,
               label: user.name ?? "",
             }))}
             {...form.getInputProps("userId")}
           />
-          <Space h="sm" />
-          <Button
-            type="submit"
-            variant="gradient"
-            gradient={{ from: "indigo", to: "cyan" }}
-          >
-            Update
-          </Button>
-        </form>
-      )}
+        </SimpleGrid>
+        <Button
+          mt="md"
+          type="submit"
+          variant="gradient"
+          gradient={{ from: "indigo", to: "cyan" }}
+        >
+          Add
+        </Button>
+      </form>
     </>
   );
 };

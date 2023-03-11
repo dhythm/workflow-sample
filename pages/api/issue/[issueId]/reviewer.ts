@@ -47,7 +47,7 @@ export default async function handler(
     data: {
       ...(type === "approver"
         ? {
-            approvals: {
+            approvers: {
               connect: {
                 id: userId,
               },

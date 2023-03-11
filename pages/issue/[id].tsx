@@ -1,27 +1,15 @@
-import { Approvals } from "@/components/Approvals";
-import { Comments } from "@/components/Comments";
-import { Reviewers } from "@/components/Reviewers";
-import { canChangeStatus } from "@/utils/issue-valicator";
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  createStyles,
-  Group,
-  rem,
-  Select,
-  SimpleGrid,
-  Space,
-  Text,
-} from "@mantine/core";
-import { Issue, User, Comment, IssueStatus } from "@prisma/client";
+import { Badge, Box, Group, Paper, SimpleGrid, Text } from "@mantine/core";
+import { Issue, User, Comment, IssueStatus, Approval } from "@prisma/client";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { useMutation, useQuery } from "react-query";
+import { useQuery } from "react-query";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
 import { Threads } from "@/components/Threads";
+import { ChangeIssueStatus } from "@/components/ChangeIssueStatus";
+import { AddReviewer } from "@/components/AddReviewer";
+import { ApproveIssue } from "@/components/ApproveIssue";
+import { IconCheck } from "@tabler/icons-react";
 
 type Inputs = {
   status: IssueStatus;
@@ -29,7 +17,6 @@ type Inputs = {
 };
 
 export default function IssueDetailsPage() {
-  const { classes, theme } = useStyles();
   const router = useRouter();
   const { id } = router.query;
 
@@ -39,6 +26,7 @@ export default function IssueDetailsPage() {
       assignee: User;
       reviewers: User[];
       approvers: User[];
+      approvals: Approval[];
       comments: Comment[];
     }
   >(
@@ -78,124 +66,85 @@ export default function IssueDetailsPage() {
     }
   }, [issue]);
 
-  const mutation = useMutation<any, any, Inputs>(async (data) => {
-    const res = await fetch(`/api/issue/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error(res.statusText);
-    return res.json();
-  });
-  const onSubmit = (data: Inputs) => {
-    mutation.mutate(data, {
-      onSuccess: () => {
-        refetch();
-      },
-    });
-  };
-
-  if (typeof id !== "string" || !users) return null;
+  if (typeof id !== "string" || !issue || !users) return null;
 
   return (
     <Box sx={{ padding: "0 24px" }}>
-      <h1>Issue Details</h1>
-      {issue && (
-        <div>
-          <form onSubmit={form.onSubmit(onSubmit)}>
-            <Card withBorder radius="md" p="md" className={classes.card}>
-              <Card.Section className={classes.section}>
-                <Group position="apart" mt="md">
-                  <Text fz="lg" fw={500}>
-                    {issue.title}
-                  </Text>
-                  <Badge size="sm">{issue.status}</Badge>
+      <div>
+        <h2>Issue Details</h2>
+
+        <Paper withBorder p="md" radius="md">
+          <Group position="apart">
+            <Text fz="xl" fw={700}>
+              {issue.title}
+            </Text>
+
+            <Badge>{issue.status}</Badge>
+          </Group>
+
+          <Text fz="sm" c="dimmed">
+            {issue.content}
+          </Text>
+
+          <SimpleGrid
+            cols={3}
+            breakpoints={[{ maxWidth: "xs", cols: 1 }]}
+            mt="xl"
+          >
+            <Box sx={{ borderBottomColor: "" }}>
+              <Text tt="uppercase" fz="xs" c="dimmed" fw={700}>
+                Assignee
+              </Text>
+              <Text fw={700}>{issue.assignee.name}</Text>
+            </Box>
+            <Box sx={{ borderBottomColor: "" }}>
+              <Text tt="uppercase" fz="xs" c="dimmed" fw={700}>
+                Author
+              </Text>
+              <Text fw={700}>{issue.author.name}</Text>
+            </Box>
+            <Box sx={{ borderBottomColor: "" }}>
+              <Text tt="uppercase" fz="xs" c="dimmed" fw={700}>
+                Created At
+              </Text>
+              <Text fw={700}>
+                {new Date(issue.createdAt).toLocaleString("ja-JS")}
+              </Text>
+            </Box>
+          </SimpleGrid>
+
+          <Text tt="uppercase" fz="xs" c="dimmed" fw={700} mt="md">
+            Reviewers
+          </Text>
+          {[...issue.reviewers, ...issue.approvers].map((user) => {
+            const isApprover = issue.approvers.some((u) => u.id === user.id);
+            const approved = issue.approvals.some(
+              (approval) => approval.userId === user.id
+            );
+            return (
+              <Group key={user.id} position="apart">
+                <Group>
+                  <Text fz="sm">{user.name}</Text>
+                  <Badge size="sm">
+                    {isApprover ? "Approver" : "Reviewer"}
+                  </Badge>
                 </Group>
-                <Text fz="sm" mt="xs">
-                  {issue.content}
-                </Text>
-                <Group position="apart" mt="md">
-                  <Text fz="sm">{issue.author.name}</Text>
-                  <Text fz="xs">
-                    {new Date(issue.createdAt).toLocaleString("ja-JS")}
-                  </Text>
-                </Group>
-              </Card.Section>
-              <Card.Section className={classes.section}>
-                <SimpleGrid
-                  mt="sm"
-                  cols={2}
-                  breakpoints={[{ maxWidth: "sm", cols: 1 }]}
-                >
-                  <Select
-                    label="Status"
-                    data={Object.keys(IssueStatus).map((status) => ({
-                      value: status,
-                      label: status,
-                    }))}
-                    withinPortal
-                    readOnly={!canChangeStatus(issue.status)}
-                    {...form.getInputProps("status")}
-                  />
-                  <Select
-                    label="Assignee"
-                    data={users.map((user) => ({
-                      value: user.id,
-                      label: user.name ?? "",
-                    }))}
-                    withinPortal
-                    dropdownPosition="bottom"
-                    readOnly={!canChangeStatus(issue.status)}
-                    {...form.getInputProps("assigneeId")}
-                  />
-                </SimpleGrid>
-                <Button
-                  mt="md"
-                  type="submit"
-                  variant="gradient"
-                  gradient={{ from: "indigo", to: "cyan" }}
-                >
-                  Update
-                </Button>
-              </Card.Section>
-            </Card>
-          </form>
+                {approved && <IconCheck color="green" />}
+              </Group>
+            );
+          })}
 
-          <Reviewers issueId={id} />
+          {/* TODO: add Threads of comments*/}
+        </Paper>
 
-          <Approvals issueId={id} />
+        <ChangeIssueStatus issueId={id} refetch={refetch} />
 
-          <Threads issueId={id} />
-        </div>
-      )}
+        <AddReviewer issueId={id} refetch={refetch} />
+
+        <ApproveIssue issueId={id} refetch={refetch} />
+
+        <Threads issueId={id} refetch={refetch} />
+      </div>
     </Box>
   );
 }
-
-const useStyles = createStyles((theme) => ({
-  card: {
-    backgroundColor:
-      theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
-  },
-
-  section: {
-    borderBottom: `${rem(1)} solid ${
-      theme.colorScheme === "dark" ? theme.colors.dark[4] : theme.colors.gray[3]
-    }`,
-    paddingLeft: theme.spacing.md,
-    paddingRight: theme.spacing.md,
-    paddingBottom: theme.spacing.md,
-  },
-
-  like: {
-    color: theme.colors.red[6],
-  },
-
-  label: {
-    textTransform: "uppercase",
-    fontSize: theme.fontSizes.xs,
-    fontWeight: 700,
-  },
-}));
