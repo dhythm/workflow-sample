@@ -14,7 +14,7 @@ export default async function handler(
 
   const thread = await prisma.thread.findFirst({
     where: { id: threadId, issueId },
-    include: { comments: true },
+    include: { comments: { include: { user: true } } },
   });
   if (!thread) {
     res.status(404).send("NOT FOUND");

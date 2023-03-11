@@ -13,10 +13,11 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { content, userId } = req.body;
+    const { title, content, userId } = req.body;
     await prisma.thread.create({
       data: {
         issueId,
+        title,
         comments: {
           create: {
             userId,

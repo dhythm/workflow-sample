@@ -43,6 +43,7 @@ CREATE TABLE "Thread" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "title" TEXT NOT NULL,
     "issueId" TEXT,
 
     CONSTRAINT "Thread_pkey" PRIMARY KEY ("id")

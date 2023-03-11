@@ -25,6 +25,7 @@ export default async function handler(
       assignee: true,
       reviewers: true,
       approvers: true,
+      threads: true,
     },
   });
   res.status(200).json(issues);

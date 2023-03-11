@@ -1,15 +1,32 @@
-import { Badge, Box, Group, Paper, SimpleGrid, Text } from "@mantine/core";
-import { Issue, User, Comment, IssueStatus, Approval } from "@prisma/client";
+import {
+  Badge,
+  Box,
+  createStyles,
+  Group,
+  Paper,
+  SimpleGrid,
+  Text,
+  UnstyledButton,
+} from "@mantine/core";
+import {
+  Issue,
+  User,
+  Comment,
+  IssueStatus,
+  Approval,
+  Thread,
+} from "@prisma/client";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { useQuery } from "react-query";
 import { useForm } from "@mantine/form";
 import { z } from "zod";
-import { Threads } from "@/components/Threads";
 import { ChangeIssueStatus } from "@/components/ChangeIssueStatus";
 import { AddReviewer } from "@/components/AddReviewer";
 import { ApproveIssue } from "@/components/ApproveIssue";
-import { IconCheck } from "@tabler/icons-react";
+import { IconCheck, IconChevronRight } from "@tabler/icons-react";
+import { AddThread } from "@/components/AddThread";
+import Link from "next/link";
 
 type Inputs = {
   status: IssueStatus;
@@ -18,7 +35,8 @@ type Inputs = {
 
 export default function IssueDetailsPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const { issueId } = router.query;
+  const { classes } = useStyles();
 
   const { data: issue, refetch } = useQuery<
     Issue & {
@@ -27,12 +45,12 @@ export default function IssueDetailsPage() {
       reviewers: User[];
       approvers: User[];
       approvals: Approval[];
-      comments: Comment[];
+      threads: (Thread & { comments: Comment[] })[];
     }
   >(
     "issue",
     async () => {
-      const res = await fetch(`/api/issue/${id}`);
+      const res = await fetch(`/api/issue/${issueId}`);
       if (!res.ok) throw new Error(res.statusText);
       return res.json();
     },
@@ -66,7 +84,7 @@ export default function IssueDetailsPage() {
     }
   }, [issue]);
 
-  if (typeof id !== "string" || !issue || !users) return null;
+  if (typeof issueId !== "string" || !issue || !users) return null;
 
   return (
     <Box sx={{ padding: "0 24px" }}>
@@ -108,7 +126,7 @@ export default function IssueDetailsPage() {
                 Created At
               </Text>
               <Text fw={700}>
-                {new Date(issue.createdAt).toLocaleString("ja-JS")}
+                {new Date(issue.createdAt).toLocaleString("ja-JP")}
               </Text>
             </Box>
           </SimpleGrid>
@@ -133,18 +151,56 @@ export default function IssueDetailsPage() {
               </Group>
             );
           })}
-
-          {/* TODO: add Threads of comments*/}
         </Paper>
 
-        <ChangeIssueStatus issueId={id} refetch={refetch} />
+        <h2>Threads</h2>
+        <Box sx={{ display: "flex", flexDirection: "column", rowGap: 8 }}>
+          {issue.threads?.map((thread) => (
+            <Paper key={thread.id} withBorder radius="md">
+              <UnstyledButton className={classes.thread}>
+                <Link href={`/issue/${issue.id}/thread/${thread.id}`}>
+                  <Group position="apart">
+                    <div>
+                      <Group>
+                        <Text fz="sm">{thread.title}</Text>
+                        <Text fz="xs">
+                          {new Date(thread.createdAt).toLocaleString("ja-JP")}
+                        </Text>
+                      </Group>
+                      <Text fz="sm">{thread.comments.length} comment(s)</Text>
+                    </div>
+                    <IconChevronRight size="0.9rem" stroke={1.5} />
+                  </Group>
+                </Link>
+              </UnstyledButton>
+            </Paper>
+          ))}
+        </Box>
 
-        <AddReviewer issueId={id} refetch={refetch} />
+        <AddThread issueId={issueId} refetch={refetch} />
 
-        <ApproveIssue issueId={id} refetch={refetch} />
+        <ChangeIssueStatus issueId={issueId} refetch={refetch} />
 
-        <Threads issueId={id} refetch={refetch} />
+        <AddReviewer issueId={issueId} refetch={refetch} />
+
+        <ApproveIssue issueId={issueId} refetch={refetch} />
       </div>
     </Box>
   );
 }
+
+const useStyles = createStyles((theme) => ({
+  thread: {
+    display: "block",
+    width: "100%",
+    padding: theme.spacing.md,
+    color: theme.colorScheme === "dark" ? theme.colors.dark[0] : theme.black,
+
+    "&:hover": {
+      backgroundColor:
+        theme.colorScheme === "dark"
+          ? theme.colors.dark[8]
+          : theme.colors.gray[0],
+    },
+  },
+}));

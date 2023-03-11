@@ -26,6 +26,7 @@ export default async function handler(
           approved: true,
         },
       },
+      threads: { include: { comments: true } },
     },
   });
   if (!issue) {
